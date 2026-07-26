@@ -141,3 +141,56 @@ export default function RevealAnimation({
     </motion.div>
   );
 }
+
+interface WordRevealProps {
+  text?: string;
+  children?: ReactNode;
+  className?: string;
+  delay?: number;
+  wordDelay?: number;
+}
+
+export const WordReveal = ({
+  text,
+  children,
+  className,
+  delay = 0,
+  wordDelay = 0.05,
+}: WordRevealProps) => {
+  if (text) {
+    const words = text.split(" ");
+    return (
+      <span className={cn("inline-flex flex-wrap justify-center gap-x-2.5 gap-y-1", className)}>
+        {words.map((word, i) => (
+          <span key={i} className="inline-block overflow-hidden pb-1">
+            <motion.span
+              className="inline-block"
+              initial={{ y: "110%", rotateZ: 5, opacity: 0 }}
+              whileInView={{ y: "0%", rotateZ: 0, opacity: 1 }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{
+                duration: 0.6,
+                delay: delay + i * wordDelay,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+            >
+              {word}
+            </motion.span>
+          </span>
+        ))}
+      </span>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ y: 30, opacity: 0, scale: 0.98 }}
+      whileInView={{ y: 0, opacity: 1, scale: 1 }}
+      viewport={{ once: true, margin: "-20px" }}
+      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+};

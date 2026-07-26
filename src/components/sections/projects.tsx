@@ -3,13 +3,14 @@ import React from "react";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
+  ResponsiveDialogTitle,
   ResponsiveDialogTrigger,
 } from "../ui/responsive-dialog";
 import { FloatingDock } from "../ui/floating-dock";
 import { ScrollArea } from "../ui/scroll-area";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 
 import projects, { Project } from "@/data/projects";
 import { SectionHeader } from "./section-header";
@@ -19,9 +20,9 @@ import ScrollingPreview from "../scrolling-preview";
 
 const ProjectsSection = () => {
   return (
-    <SectionWrapper id="projects" className="max-w-7xl mx-auto md:min-h-[130vh] px-4">
+    <SectionWrapper id="projects" className="max-w-7xl mx-auto md:min-h-[70vh] px-4">
       <SectionHeader id="projects" title="Projects" />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
         {projects.map((project) => (
           <ProjectCard key={project.id} project={project} />
         ))}
@@ -30,33 +31,79 @@ const ProjectsSection = () => {
   );
 };
 
+const TiltCardWrapper = ({ children }: { children: React.ReactNode }) => {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseXSpring = useSpring(x, { stiffness: 300, damping: 20 });
+  const mouseYSpring = useSpring(y, { stiffness: 300, damping: 20 });
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        rotateY,
+        rotateX,
+        transformStyle: "preserve-3d",
+      }}
+      className="group relative w-full max-w-[400px] h-auto rounded-xl overflow-hidden ring-1 ring-white/10 dark:ring-white/20 shadow-lg hover:shadow-2xl hover:shadow-primary/20 hover:ring-primary/50 transition-all duration-300 cursor-can-hover"
+    >
+      <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-20" />
+      {children}
+    </motion.div>
+  );
+};
+
 const ProjectCard = ({ project }: { project: Project }) => {
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex items-center justify-center [perspective:1000px]">
       <ResponsiveDialog>
         <ResponsiveDialogTrigger className="bg-transparent flex justify-center w-full">
-          <div
-            className="group relative w-full max-w-[400px] h-auto rounded-lg overflow-hidden ring-1 ring-white/5"
-            style={{ aspectRatio: "3/2" }}
-          >
-            {/* `src` can be any aspect ratio (tall pages pan, normal ones fit);
-                the wallpaper is an optional /assets/backgrounds/<id>.jpg. */}
-            <ScrollingPreview
-              src={project.src}
-              alt={project.title}
-              bg={`/assets/backgrounds/${project.id}.jpg`}
-            />
-            <div className="absolute w-full h-24 bottom-0 left-0 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-10">
-              <div className="flex flex-col h-full items-start justify-end p-4">
-                <div className="text-lg text-left [text-shadow:0_1px_4px_rgba(0,0,0,0.6)]">
-                  {project.title}
-                </div>
-                <div className="text-xs bg-primary text-primary-foreground rounded-lg w-fit px-2">
-                  {project.category}
+          <TiltCardWrapper>
+            <div
+              className="w-full h-auto relative"
+              style={{ aspectRatio: "3/2" }}
+            >
+              {/* `src` can be any aspect ratio (tall pages pan, normal ones fit);
+                  the wallpaper is an optional /assets/backgrounds/<id>.jpg. */}
+              <ScrollingPreview
+                src={project.src}
+                alt={project.title}
+                bg={`/assets/backgrounds/${project.id}.jpg`}
+              />
+              <div className="absolute w-full h-28 bottom-0 left-0 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none z-10">
+                <div className="flex flex-col h-full items-start justify-end p-4">
+                  <div className="text-lg font-bold text-left text-foreground [text-shadow:0_1px_4px_rgba(0,0,0,0.8)] group-hover:text-primary transition-colors">
+                    {project.title}
+                  </div>
+                  <div className="text-xs font-semibold bg-primary/90 text-primary-foreground rounded-full w-fit px-2.5 py-0.5 mt-1 shadow-sm">
+                    {project.category}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </TiltCardWrapper>
         </ResponsiveDialogTrigger>
 
         <ResponsiveDialogContent className="md:max-w-4xl md:h-[85vh] md:!flex md:flex-col md:overflow-hidden md:p-0 md:gap-0">
@@ -64,9 +111,9 @@ const ProjectCard = ({ project }: { project: Project }) => {
           <div className="shrink-0 border-b border-border bg-background/80 backdrop-blur-sm px-8 py-5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
-                <h4 className="font-display text-xl md:text-2xl font-bold text-foreground tracking-tight truncate">
+                <ResponsiveDialogTitle className="font-display text-xl md:text-2xl font-bold text-foreground tracking-tight truncate">
                   {project.title}
-                </h4>
+                </ResponsiveDialogTitle>
                 <span className="shrink-0 text-[11px] uppercase tracking-widest text-muted-foreground border border-border rounded-full px-3 py-0.5">
                   {project.category}
                 </span>

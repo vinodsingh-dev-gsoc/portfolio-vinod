@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import React from "react";
@@ -9,9 +11,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { usePreloader } from "../preloader";
-import { BlurIn, BoxReveal } from "../reveal-animations";
+import { BlurIn, BoxReveal, WordReveal } from "../reveal-animations";
 import ScrollDownIcon from "../scroll-down-icon";
-import { SiGithub, SiLinkedin, SiX } from "react-icons/si";
+import { SiGithub, SiInstagram, SiLinkedin, SiX } from "react-icons/si";
 import { config } from "@/data/config";
 
 import SectionWrapper from "../ui/section-wrapper";
@@ -20,11 +22,10 @@ const HeroSection = () => {
   const { isLoading } = usePreloader();
 
   return (
-    <SectionWrapper id="hero" className={cn("relative w-full h-screen")}>
-      <div className="grid md:grid-cols-2">
+    <SectionWrapper id="hero" className="min-h-screen">
+      <div className="grid grid-cols-1 md:grid-cols-2">
         <div
           className={cn(
-            "h-[calc(100dvh-3rem)] md:h-[calc(100dvh-4rem)] z-[2]",
             "col-span-1",
             "flex flex-col justify-start md:justify-center items-center md:items-start",
             "pt-28 sm:pb-16 md:p-20 lg:p-24 xl:p-28"
@@ -69,22 +70,23 @@ const HeroSection = () => {
                   </Tooltip>
                 </BlurIn>
                 {/* <div className="md:block hidden bg-gradient-to-r from-zinc-300/0 via-zinc-300/50 to-zinc-300/0 w-screen h-px animate-fade-right animate-glow" /> */}
-                <BlurIn delay={1.2}>
-                  <p
-                    className={cn(
-                      "md:self-start md:mt-4 font-medium text-md text-slate-500 dark:text-zinc-400",
-                      "cursor-default sm:text-xl md:text-xl whitespace-nowrap bg-clip-text "
-                    )}
-                  >
-                    A Full Stack Web Developer
-                  </p>
-                </BlurIn>
+                <div className="md:self-start md:mt-4 flex flex-col gap-2">
+                  <BlurIn delay={1.2}>
+                    <p className="text-sm md:text-base font-semibold text-slate-500 dark:text-zinc-400">
+                      He/Him
+                    </p>
+                  </BlurIn>
+                  <WordReveal
+                    text="Research Intern at IIT Roorkee | Building Cross-Platform Apps with Flutter | C++ Developer | ML & IoT Enthusiast"
+                    delay={1.3}
+                    wordDelay={0.03}
+                    className="font-medium text-md text-slate-600 dark:text-zinc-300 cursor-default sm:text-lg md:text-xl leading-relaxed max-w-2xl justify-start"
+                  />
+                </div>
               </div>
               <div className="mt-8 flex flex-col gap-3 w-fit">
                 <Link
-                  href={
-                    "https://drive.google.com/file/d/1MTSsUA8V7Po2AsNXT8kZ5sLOpzC8l7qm/view?usp=sharing"
-                  }
+                  href="/resume.pdf"
                   target="_blank"
                   className="flex-1"
                 >
@@ -113,11 +115,20 @@ const HeroSection = () => {
                   </Tooltip>
                   <div className="flex items-center h-full gap-2">
                     <Link
-                      href={config.social.twitter}
+                      href={config.social.twitter || "#"}
                       target="_blank"
                     >
                       <Button variant={"outline"}>
                         <SiX size={24} />
+                      </Button>
+                    </Link>
+                    <Link
+                      href={config.social.instagram || "#"}
+                      target="_blank"
+                      className="cursor-can-hover"
+                    >
+                      <Button variant={"outline"}>
+                        <SiInstagram size={24} />
                       </Button>
                     </Link>
                     <Link

@@ -3,7 +3,7 @@ import { config } from "@/data/config";
 import { Resend } from "resend";
 import { z } from "zod";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || "re_123");
 
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = 3;
@@ -41,6 +41,17 @@ export async function POST(req: Request) {
     if (!zodSuccess)
       return Response.json({ error: zodError?.message }, { status: 400 });
 
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === "re_123") {
+      return Response.json(
+        {
+          error:
+            "Email server is not configured yet (RESEND_API_KEY missing in .env.local). Please email me directly at " +
+            config.email,
+        },
+        { status: 500 }
+      );
+    }
+
     const { data: resendData, error: resendError } = await resend.emails.send({
       from: "Porfolio <onboarding@resend.dev>",
       to: [config.email],
@@ -53,7 +64,10 @@ export async function POST(req: Request) {
     });
 
     if (resendError) {
-      return Response.json({ error: "Failed to send email" }, { status: 500 });
+      return Response.json(
+        { error: resendError.message || "Failed to send email" },
+        { status: 500 }
+      );
     }
 
     return Response.json(resendData);

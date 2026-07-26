@@ -1,3 +1,5 @@
+"use client";
+
 import SocketContextProvider from "@/contexts/socketio";
 import Preloader from "./preloader";
 import { ThemeProvider } from "./theme-provider";

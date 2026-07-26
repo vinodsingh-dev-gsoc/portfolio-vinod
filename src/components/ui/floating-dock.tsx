@@ -5,6 +5,7 @@
  **/
 
 import { cn } from "@/lib/utils";
+import { triggerSkillHover, triggerSkillClick } from "@/hooks/use-skill-interaction";
 import {
   AnimatePresence,
   MotionValue,
@@ -28,6 +29,7 @@ export const FloatingDock = ({
   return (
     <>
       <FloatingDockDesktop items={items} className={desktopClassName} />
+      <FloatingDockMobile items={items} className={mobileClassName} />
     </>
   );
 };
@@ -64,18 +66,20 @@ const FloatingDockMobile = ({
                   },
                 }}
                 transition={{ delay: (items.length - 1 - idx) * 0.05 }}
+                className="h-10 w-10 rounded-full bg-secondary/30 flex items-center justify-center"
               >
-                <div
-                  key={item.title}
-                  className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center"
-                >
-                  <div className="h-4 w-4">{item.icon}</div>
-                </div>
+                <div className="h-4 w-4">{item.icon}</div>
               </motion.div>
             ))}
           </motion.div>
         )}
       </AnimatePresence>
+      <button
+        onClick={() => setOpen(!open)}
+        className="h-10 w-10 rounded-full bg-secondary/30 flex items-center justify-center"
+      >
+        <span className="text-xs">☰</span>
+      </button>
     </div>
   );
 };
@@ -140,13 +144,11 @@ const FloatingDockDesktop = ({
             className="relative w-full h-full flex items-center justify-center"
           >
             <motion.div
-              className={cn(
-                "w-5 h-5 border-2 left-[50%] top-0 border-foreground rounded-full",
-                "translate-x-[-50px]"
-              )}
-              initial={{ opacity: 0, x: -50 }}
               animate={controls}
-            ></motion.div>
+              className="absolute pointer-events-none text-xs text-muted-foreground font-light px-2 py-0.5 rounded-md bg-secondary/60 backdrop-blur-sm"
+            >
+              Hover to interact
+            </motion.div>
           </div>
         </div>
       )}
@@ -209,9 +211,16 @@ function IconContainer({
     <motion.div
       ref={ref}
       style={{ width, height }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="aspect-square rounded-full bg-secondary/30 flex items-center justify-center relative"
+      onMouseEnter={() => {
+        setHovered(true);
+        triggerSkillHover(title);
+      }}
+      onMouseLeave={() => {
+        setHovered(false);
+        triggerSkillHover(null);
+      }}
+      onClick={() => triggerSkillClick(title)}
+      className="aspect-square rounded-full bg-secondary/30 flex items-center justify-center relative cursor-pointer"
     >
       <AnimatePresence>
         {hovered && (

@@ -1,3 +1,5 @@
+"use client";
+
 import { EXPERIENCE, SkillNames, SKILLS } from "@/data/constants";
 import { SectionHeader } from "./section-header";
 import { Badge } from "../ui/badge";
@@ -5,6 +7,7 @@ import { cn } from "@/lib/utils";
 import SectionWrapper from "../ui/section-wrapper";
 import { motion } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { triggerSkillHover, triggerSkillClick } from "@/hooks/use-skill-interaction";
 
 const ExperienceSection = () => {
   return (
@@ -52,20 +55,25 @@ const ExperienceCard = ({
       }}
       viewport={{ once: true, margin: "-50px" }}
     >
-      <Card
-        className={cn(
-          "bg-card text-card-foreground border-border",
-          "hover:border-primary/20 transition-colors duration-300",
-          "shadow-sm hover:shadow-md"
-        )}
+      <motion.div
+        whileHover={{ scale: 1.015, y: -4 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
       >
-        <CardHeader className="pb-3">
+        <Card
+          className={cn(
+            "group relative overflow-hidden bg-card/80 backdrop-blur-md text-card-foreground border border-border/60",
+            "hover:border-primary/50 transition-all duration-300",
+            "shadow-md hover:shadow-2xl hover:shadow-primary/10"
+          )}
+        >
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+          <CardHeader className="pb-3 relative z-10">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div className="space-y-1">
-              <CardTitle className="text-xl font-bold tracking-tight">
+              <CardTitle className="text-xl font-bold tracking-tight" suppressHydrationWarning>
                 {experience.title}
               </CardTitle>
-              <div className="text-base font-medium text-muted-foreground">
+              <div className="text-base font-medium text-muted-foreground" suppressHydrationWarning>
                 {experience.company}
               </div>
             </div>
@@ -88,7 +96,10 @@ const ExperienceCard = ({
                 <Badge
                   key={skillName}
                   variant="outline"
-                  className="gap-2 text-xs font-normal bg-secondary/30 hover:bg-secondary/50 transition-colors border-transparent"
+                  onMouseEnter={() => triggerSkillHover(skillName)}
+                  onMouseLeave={() => triggerSkillHover(null)}
+                  onClick={() => triggerSkillClick(skillName)}
+                  className="gap-2 text-xs font-normal bg-secondary/30 hover:bg-primary/20 hover:border-primary/50 hover:scale-105 transition-all cursor-pointer border-transparent"
                 >
                   <img
                     src={skill.icon}
@@ -101,7 +112,8 @@ const ExperienceCard = ({
             })}
           </div>
         </CardContent>
-      </Card>
+        </Card>
+      </motion.div>
     </motion.div>
   );
 };

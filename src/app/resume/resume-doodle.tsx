@@ -116,7 +116,7 @@ export default function ResumeDoodle({
       <iframe
         src={src}
         title={title}
-        className="relative z-0 block h-full w-full bg-white"
+        className="relative z-0 block h-full w-full bg-white border-0"
       />
 
       {/* Doodle layer */}

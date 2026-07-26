@@ -11,7 +11,7 @@ const NotFoundPage = () => {
   return (
     <>
       <Suspense fallback={<div>Loading...</div>}>
-        <Spline scene="/assets/404.spline" style={{ height: "100vh" }} />
+        <Spline scene="/assets/404.spline?v=2" style={{ height: "100vh" }} />
       </Suspense>
     </>
   );

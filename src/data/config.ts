@@ -1,45 +1,35 @@
 const config = {
-  title: "Naresh Khatri | Full-Stack Developer",
+  title: "Vinod Singh | Research Intern & Flutter Developer",
   description: {
-    long: "Explore the portfolio of Naresh, a full-stack developer and creative technologist specializing in interactive web experiences, 3D animations, and innovative projects. Discover my latest work, including Coding Ducks, The Booking Desk, Ghostchat, and more. Let's build something amazing together!",
+    long: "Explore the portfolio of Vinod, an engineering student and developer specializing in Flutter and C++, with a strong passion for diving deeper into Application development. Discover my journey towards mastering DSA, contributing to open source, and building impactful projects.",
     short:
-      "Discover the portfolio of Naresh, a full-stack developer creating interactive web experiences and innovative projects.",
+      "Discover the portfolio of Vinod, a developer specializing in Flutter and C++, actively expanding his skills into Android development.",
   },
   keywords: [
-    "Naresh",
+    "Vinod Singh",
     "portfolio",
-    "full-stack developer",
-    "creative technologist",
-    "web development",
-    "3D animations",
-    "interactive websites",
-    "Coding Ducks",
-    "The Booking Desk",
-    "Ghostchat",
-    "web design",
-    "GSAP",
-    "React",
-    "Next.js",
-    "Spline",
-    "Framer Motion",
+    "Flutter developer",
+    "C++",
+    "DSA",
+    "IoT",
+    "Machine Learning",
+    "GSoC",
+    "software engineering",
+    "web development"
   ],
-  author: "Naresh Khatri",
-  email: "naresh.khatri2345@gmail.com",
-  site: "https://nareshkhatri.site",
-
-  // for github stars button
-  githubUsername: "naresh-khatri",
-  githubRepo: "3d-portfolio",
-
+  author: "Vinod Singh",
+  email: "vinodsingh.dev.2025@gmail.com",
+  site: "https://yourwebsite.com",
+  githubUsername: "vinodsingh-dev-gsoc",
+  githubRepo: "portfolio-vinod",
   get ogImg() {
     return this.site + "/assets/seo/og-image.png";
   },
   social: {
-    twitter: "https://x.com/nothotchaddi",
-    linkedin: "https://www.linkedin.com/in/naresh-khatri/",
-    instagram: "https://www.instagram.com/hotchaddi",
-    facebook: "https://www.facebook.com/HotChaddi/",
-    github: "https://github.com/Naresh-Khatri",
+    linkedin: "https://www.linkedin.com/in/vinod-singh-uttarakhand/",
+    instagram: "https://instagram.com/vinodsingh.vibes.2512",
+    github: "https://github.com/vinodsingh-dev-gsoc",
+    twitter: "https://x.com",
   },
 };
 export { config };

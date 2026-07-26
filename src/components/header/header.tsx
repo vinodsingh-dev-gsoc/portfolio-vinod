@@ -50,8 +50,11 @@ const Header = ({ loader }: HeaderProps) => {
       >
       </div> */}
       <div className={cn(styles.bar, "flex items-center justify-between")}>
-        <Link href="/" className="flex items-center justify-center">
-          <Button variant={"link"} className="text-md">
+        <Link href="/" className="flex items-center justify-center gap-2 group">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/20 border border-primary/40 text-primary font-black text-xs shadow-[0_0_12px_-2px_hsl(var(--primary))] transition-transform duration-300 group-hover:scale-110">
+            V
+          </span>
+          <Button variant={"link"} className="text-md font-bold px-0">
             {config.author}
           </Button>
         </Link>

@@ -12,6 +12,7 @@ import { useTheme } from "next-themes";
 import { Section, getKeyboardState } from "./animated-background-config";
 import { useSounds } from "./realtime/hooks/use-sounds";
 import { usePerfProfile } from "@/hooks/use-perf-profile";
+import { useSkillInteraction } from "@/hooks/use-skill-interaction";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -22,11 +23,109 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
   const splineContainer = useRef<HTMLDivElement>(null);
   const [splineApp, setSplineApp] = useState<Application>();
   const selectedSkillRef = useRef<Skill | null>(null);
-
+  const originalYsRef = useRef<Record<string, number>>({});
   const { playPressSound, playReleaseSound } = useSounds();
 
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
-  const [activeSection, setActiveSection] = useState<Section>("hero");
+  const [activeSection, setActiveSection] = useState<Section>(() => {
+    if (typeof window !== "undefined" && window.location.hash) {
+      const h = window.location.hash.replace("#", "") as Section;
+      if (["hero", "skills", "projects", "experience", "contact"].includes(h)) {
+        return h;
+      }
+    }
+    return "hero";
+  });
+  const activeSectionRef = useRef<Section>(activeSection);
+
+  useEffect(() => {
+    activeSectionRef.current = activeSection;
+    if (activeSection !== "hero" && activeSection !== "skills") {
+      if (selectedSkillRef.current) playReleaseSound();
+      setSelectedSkill(null);
+      selectedSkillRef.current = null;
+      if (splineApp) {
+        safeSetVariable(splineApp, "heading", "");
+        safeSetVariable(splineApp, "desc", "");
+      }
+    }
+  }, [activeSection, splineApp, playReleaseSound]);
+
+  useSkillInteraction({
+    onSkillHover: (skillName) => {
+      if (!splineApp || (activeSectionRef.current !== "hero" && activeSectionRef.current !== "skills")) return;
+      if (!skillName) {
+        if (selectedSkillRef.current) playReleaseSound();
+        setSelectedSkill(null);
+        selectedSkillRef.current = null;
+        safeSetVariable(splineApp, "heading", "");
+        safeSetVariable(splineApp, "desc", "");
+        return;
+      }
+      const skill = Object.values(SKILLS).find(
+        (s) => s.name.toLowerCase() === skillName.toLowerCase() || s.label.toLowerCase() === skillName.toLowerCase()
+      ) || SKILLS[skillName as SkillNames];
+      if (skill) {
+        if (selectedSkillRef.current) playReleaseSound();
+        playPressSound();
+        setSelectedSkill(skill);
+        selectedSkillRef.current = skill;
+        const keycap = splineApp.findObjectByName(skill.name);
+        if (keycap) {
+          const origY = originalYsRef.current[skill.name] ?? keycap.position.y;
+          gsap.fromTo(
+            keycap.position,
+            { y: origY },
+            { y: origY + 60, duration: 0.25, yoyo: true, repeat: 1, ease: "power2.out" }
+          );
+        }
+      }
+    },
+    onSkillClick: (skillName) => {
+      if (!splineApp || (activeSectionRef.current !== "hero" && activeSectionRef.current !== "skills")) return;
+      const skill = Object.values(SKILLS).find(
+        (s) => s.name.toLowerCase() === skillName.toLowerCase() || s.label.toLowerCase() === skillName.toLowerCase()
+      ) || SKILLS[skillName as SkillNames];
+      if (skill) {
+        playPressSound();
+        setSelectedSkill(skill);
+        selectedSkillRef.current = skill;
+        const keycap = splineApp.findObjectByName(skill.name);
+        if (keycap) {
+          const origY = originalYsRef.current[skill.name] ?? keycap.position.y;
+          gsap.fromTo(
+            keycap.position,
+            { y: origY },
+            { y: origY + 85, duration: 0.35, yoyo: true, repeat: 1, ease: "bounce.out" }
+          );
+        }
+      }
+    }
+  });
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      const h = window.location.hash.replace("#", "") as Section;
+      if (["hero", "skills", "projects", "experience", "contact"].includes(h)) {
+        setActiveSection(h);
+      }
+    };
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  const safeSetVariable = (app: any, name: string, value: string) => {
+    try {
+      if (
+        app &&
+        typeof app.setVariable === "function" &&
+        typeof app.getVariable === "function" &&
+        app.getVariable(name) !== undefined
+      ) {
+        app.setVariable(name, value);
+      }
+    } catch {}
+  };
 
   // Animation controllers refs
   const bongoAnimationRef = useRef<{ start: () => void; stop: () => void }>(null);
@@ -38,15 +137,14 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
 
   const handleMouseHover = (e: SplineEvent) => {
     if (!splineApp || selectedSkillRef.current?.name === e.target.name) return;
+    if (activeSectionRef.current !== "hero" && activeSectionRef.current !== "skills") return;
 
     if (e.target.name === "body" || e.target.name === "platform") {
       if (selectedSkillRef.current) playReleaseSound();
       setSelectedSkill(null);
       selectedSkillRef.current = null;
-      if (splineApp.getVariable("heading") && splineApp.getVariable("desc")) {
-        splineApp.setVariable("heading", "");
-        splineApp.setVariable("desc", "");
-      }
+      safeSetVariable(splineApp, "heading", "");
+      safeSetVariable(splineApp, "desc", "");
     } else {
       if (!selectedSkillRef.current || selectedSkillRef.current.name !== e.target.name) {
         const skill = SKILLS[e.target.name as SkillNames];
@@ -74,20 +172,20 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
     };
 
     splineApp.addEventListener("keyUp", () => {
-      if (!splineApp || isInputFocused()) return;
+      if (!splineApp || isInputFocused() || (activeSectionRef.current !== "hero" && activeSectionRef.current !== "skills")) return;
       playReleaseSound();
-      splineApp.setVariable("heading", "");
-      splineApp.setVariable("desc", "");
+      safeSetVariable(splineApp, "heading", "");
+      safeSetVariable(splineApp, "desc", "");
     });
     splineApp.addEventListener("keyDown", (e) => {
-      if (!splineApp || isInputFocused()) return;
+      if (!splineApp || isInputFocused() || (activeSectionRef.current !== "hero" && activeSectionRef.current !== "skills")) return;
       const skill = SKILLS[e.target.name as SkillNames];
       if (skill) {
         playPressSound();
         setSelectedSkill(skill);
         selectedSkillRef.current = skill;
-        splineApp.setVariable("heading", skill.label);
-        splineApp.setVariable("desc", skill.shortDescription);
+        safeSetVariable(splineApp, "heading", skill.label);
+        safeSetVariable(splineApp, "desc", skill.shortDescription);
       }
     });
     splineApp.addEventListener("mouseHover", handleMouseHover);
@@ -201,15 +299,16 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
         .forEach((skill, idx) => {
           const keycap = splineApp.findObjectByName(skill.name);
           if (!keycap) return;
+          const origY = originalYsRef.current[skill.name] ?? 0;
           floatTweens.push(
             gsap.to(keycap.position, {
-              y: Math.random() * 200 + 200,
+              y: origY + Math.random() * 50 + 50,
               duration: Math.random() * 2 + 2,
-              delay: idx * 0.6,
+              delay: idx * 0.05,
               repeat: -1,
               yoyo: true,
               yoyoEase: "none",
-              ease: "elastic.out(1,0.3)",
+              ease: "sine.inOut",
             })
           );
         });
@@ -222,16 +321,16 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
       Object.values(SKILLS).forEach((skill) => {
         const keycap = splineApp.findObjectByName(skill.name);
         if (!keycap) return;
+        const origY = originalYsRef.current[skill.name] ?? 0;
         settleTweens.push(
           gsap.to(keycap.position, {
-            y: 0,
-            duration: 4,
-            ease: "elastic.out(1,0.7)",
+            y: origY,
+            duration: 1.5,
+            ease: "elastic.out(1,0.6)",
           })
         );
       });
     };
-
     return { start, stop };
   };
 
@@ -257,29 +356,42 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
     );
 
     const allObjects = splineApp.getAllObjects();
-    const keycaps = allObjects.filter((obj) => obj.name === "keycap");
+    const keycaps = allObjects.filter((obj) => SKILLS[obj.name as SkillNames] !== undefined);
 
-    await sleep(900);
-
-    if (isMobile) {
-      const mobileKeyCaps = allObjects.filter((obj) => obj.name === "keycap-mobile");
-      mobileKeyCaps.forEach((keycap) => { keycap.visible = true; });
-    } else {
-      const desktopKeyCaps = allObjects.filter((obj) => obj.name === "keycap-desktop");
-      desktopKeyCaps.forEach(async (keycap, idx) => {
-        await sleep(idx * 70);
-        keycap.visible = true;
+    // Capture original Y positions for floating/hover animations
+    if (Object.keys(originalYsRef.current).length === 0) {
+      keycaps.forEach(k => {
+        originalYsRef.current[k.name] = k.position.y;
       });
     }
 
+    // Ensure parent folders (like 'row 0') and base keyboard parts are visible
+    allObjects.forEach((obj) => {
+      const isSkill = SKILLS[obj.name as SkillNames] !== undefined;
+      const lowerName = obj.name.toLowerCase();
+      if (
+        !isSkill && (
+          lowerName.includes("key") ||
+          lowerName.includes("cap") ||
+          lowerName.includes("row") ||
+          lowerName.includes("body") ||
+          lowerName.includes("keyboard")
+        )
+      ) {
+        obj.visible = true;
+      }
+    });
+
+    // Staggered falling keys animation
     keycaps.forEach(async (keycap, idx) => {
+      const targetY = originalYsRef.current[keycap.name] ?? 50;
       keycap.visible = false;
       await sleep(idx * 70);
       keycap.visible = true;
       gsap.fromTo(
         keycap.position,
         { y: 200 },
-        { y: 50, duration: 0.5, delay: 0.1, ease: "bounce.out" }
+        { y: targetY, duration: 0.5, delay: 0.1, ease: "bounce.out" }
       );
     });
   };
@@ -342,10 +454,10 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
   }, [theme, splineApp, isMobile, activeSection]);
 
   useEffect(() => {
-    if (!selectedSkill || !splineApp) return;
-    splineApp.setVariable("heading", selectedSkill.label);
-    splineApp.setVariable("desc", selectedSkill.shortDescription);
-  }, [selectedSkill]);
+    if (!splineApp || !selectedSkill) return;
+    safeSetVariable(splineApp, "heading", selectedSkill.label);
+    safeSetVariable(splineApp, "desc", selectedSkill.shortDescription);
+  }, [selectedSkill, splineApp]);
 
   // Handle rotation and teardown animations based on active section
   useEffect(() => {
@@ -393,8 +505,8 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
     const manageAnimations = async () => {
       // Reset text if not in skills
       if (activeSection !== "skills") {
-        splineApp.setVariable("heading", "");
-        splineApp.setVariable("desc", "");
+        safeSetVariable(splineApp, "heading", "");
+        safeSetVariable(splineApp, "desc", "");
       }
 
       // Handle Rotate/Teardown Tweens
@@ -444,18 +556,23 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
 
   // Reveal keyboard on load/route change
   useEffect(() => {
-    // Rebuild the URL from the current pathname so the hash is always *replaced*
-    // rather than appended. Using router.push("/" + hash) stacked fragments on
-    // refresh (e.g. "/#skills#skills#skills") because the existing hash in the
-    // address bar was never stripped first. replaceState also avoids polluting
-    // browser history with an entry per scrolled-through section.
     const hash = activeSection === "hero" ? "" : `#${activeSection}`;
     const url = window.location.pathname + window.location.search + hash;
     window.history.replaceState(window.history.state, "", url);
 
-    if (!splineApp || isLoading || keyboardRevealed) return;
-    updateKeyboardTransform();
-  }, [splineApp, isLoading, activeSection]);
+    if (!splineApp || isLoading) return;
+    if (!keyboardRevealed) {
+      updateKeyboardTransform();
+    } else {
+      const kbd = splineApp.findObjectByName("keyboard");
+      if (kbd) {
+        const currentState = getKeyboardState({ section: activeSection, isMobile });
+        gsap.to(kbd.scale, { ...currentState.scale, duration: 1.2, ease: "power2.out" });
+        gsap.to(kbd.position, { ...currentState.position, duration: 1.2, ease: "power2.out" });
+        gsap.to(kbd.rotation, { ...currentState.rotation, duration: 1.2, ease: "power2.out" });
+      }
+    }
+  }, [splineApp, isLoading, activeSection, keyboardRevealed, isMobile]);
 
   // Cap the renderer's pixel ratio once the scene is ready, and clean up the
   // resize listener on unmount / DPR change (previously added in onLoad and
@@ -482,14 +599,73 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <Spline
-        className="w-full h-full fixed"
+        className="w-full h-full fixed inset-0"
         ref={splineContainer}
         onLoad={(app: Application) => {
           setSplineApp(app);
           bypassLoading();
         }}
-        scene="/assets/skills-keyboard.spline"
+        scene="https://prod.spline.design/43tZIbjotASSHgC9/scene.splinecode"
       />
+
+      {/* HTML Skill Info Tooltip (Fixes missing Spline text objects & adds Proficiency) */}
+      <div
+        className={`fixed bottom-10 md:bottom-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 ease-out flex flex-col items-center justify-center text-center p-6 rounded-2xl w-[90%] max-w-md shadow-2xl ${
+          selectedSkill
+            ? "opacity-100 translate-y-0 scale-100"
+            : "opacity-0 translate-y-8 scale-95"
+        }`}
+        style={{
+          background: theme === "dark" ? "rgba(15, 23, 42, 0.9)" : "rgba(255, 255, 255, 0.9)",
+          backdropFilter: "blur(20px)",
+          border: `1px solid ${selectedSkill?.color ? selectedSkill.color + "60" : "rgba(255, 255, 255, 0.1)"}`,
+          boxShadow: selectedSkill?.color ? `0 10px 40px -10px ${selectedSkill.color}40` : undefined,
+        }}
+      >
+        {selectedSkill && (
+          <>
+            <div className="flex items-center gap-3 mb-2">
+              <img src={selectedSkill.icon} alt={selectedSkill.label} className="w-8 h-8 object-contain drop-shadow-md" />
+              <h3
+                className="text-2xl font-extrabold tracking-tight drop-shadow-sm"
+                style={{ color: selectedSkill.color || (theme === "dark" ? "#fff" : "#000") }}
+              >
+                {selectedSkill.label}
+              </h3>
+            </div>
+
+            {/* Proficiency & Mastery Meter */}
+            {selectedSkill.proficiency && (
+              <div className="w-full flex flex-col gap-1.5 my-2 py-2 px-3 rounded-xl bg-secondary/50 dark:bg-black/30 border border-border/50">
+                <div className="flex items-center justify-between text-xs font-bold">
+                  <span className="uppercase tracking-wider flex items-center gap-1.5 text-primary">
+                    {selectedSkill.proficiency === "Expert" ? "🌟 Expert Mastery" : selectedSkill.proficiency === "Advanced" ? "🚀 Advanced Level" : "⚡ Proficient"}
+                  </span>
+                  <span className="font-mono text-muted-foreground">{selectedSkill.level || 85}%</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500 ease-out"
+                    style={{
+                      width: `${selectedSkill.level || 85}%`,
+                      background: selectedSkill.color || "#0175C2",
+                    }}
+                  />
+                </div>
+                {selectedSkill.category && (
+                  <span className="text-[10px] text-muted-foreground uppercase font-semibold text-left">
+                    Category: {selectedSkill.category}
+                  </span>
+                )}
+              </div>
+            )}
+
+            <p className={`text-sm font-medium leading-relaxed mt-1 ${theme === "dark" ? "text-slate-300" : "text-slate-700"}`}>
+              {selectedSkill.shortDescription}
+            </p>
+          </>
+        )}
+      </div>
     </Suspense>
   );
 };

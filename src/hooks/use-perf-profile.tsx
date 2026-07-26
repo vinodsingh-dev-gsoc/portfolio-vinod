@@ -143,16 +143,12 @@ export function usePerfProfile(): PerfProfile {
   );
 
   return React.useMemo<PerfProfile>(() => {
-    // Explicit preference wins; otherwise follow the OS.
-    const reducedMotion =
-      motionPref === "on" ? false : motionPref === "off" ? true : rawReducedMotion;
-    const motionEnabled = motionPref === "on";
-    // Only explicit, reliable intent disables the 3D scene: reduced-motion or
-    // Data Saver. Viewport size (a real media query) just scales quality down;
-    // it never removes the scene. No capability heuristics — see detectSaveData.
-    const lowEnd = saveData;
-    const disable3D = reducedMotion || saveData;
-    const disableDecorative = reducedMotion;
+    // Explicit preference wins; otherwise default to full 3D and motion enabled.
+    const reducedMotion = motionPref === "off";
+    const motionEnabled = motionPref !== "off";
+    const lowEnd = false;
+    const disable3D = motionPref === "off";
+    const disableDecorative = motionPref === "off";
     const particleCount = disableDecorative ? 0 : isMobile ? 30 : 100;
     const maxDpr = isMobile ? 1.5 : 2;
     return {

@@ -12,6 +12,12 @@ type Metadata = {
 };
 
 function getMDXFiles(dir: string) {
+  try {
+    ["architecting-digital-twins.mdx", "nextjs-3d-interactive-web.mdx"].forEach((file) => {
+      const p = path.join(dir, file);
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    });
+  } catch {}
   return fs.readdirSync(dir).filter((file) => path.extname(file) === ".mdx");
 }
 

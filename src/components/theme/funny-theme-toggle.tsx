@@ -18,6 +18,11 @@ export default function FunnyThemeToggle({
   const [counter, setCounter] = React.useState({ dark: 0, light: 0 });
   const { toast } = useToast();
   const ref = React.useRef<HTMLButtonElement>(null);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const toggleTheme = async (newTheme: string, event?: React.MouseEvent) => {
     // @ts-ignore
@@ -75,6 +80,21 @@ export default function FunnyThemeToggle({
     });
     toggleTheme("dark", e);
   };
+
+  if (!mounted) {
+    return (
+      <Button
+        variant="outline"
+        size="icon"
+        className={cn("border-none bg-transparent", className)}
+        disabled
+      >
+        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all duration-500 dark:-rotate-90 dark:scale-0 pointer-events-none" />
+        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all duration-500 dark:rotate-0 dark:scale-100 pointer-events-none" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    );
+  }
 
   return (
     <>
