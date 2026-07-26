@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { SkillNames } from "@/data/skills";
 
 export const SKILL_HOVER_EVENT = "skill-hover-event";
 export const SKILL_CLICK_EVENT = "skill-click-event";
