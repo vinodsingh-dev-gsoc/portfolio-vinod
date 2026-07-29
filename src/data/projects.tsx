@@ -313,52 +313,5 @@ const projects: Project[] = [
       );
     },
   },
-  {
-    id: "portfolio",
-    category: "3D Web Application & Portfolio",
-    title: "Interactive 3D Portfolio",
-    src: "/assets/projects-screenshots/portfolio/landing.png",
-    screenshots: [
-      "landing.png",
-      "projects.png",
-      "skills.png",
-      "blogs.png",
-      "contact.png"
-    ],
-    skills: {
-      frontend: [
-        PROJECT_SKILLS.next,
-        PROJECT_SKILLS.react,
-        PROJECT_SKILLS.ts,
-        PROJECT_SKILLS.tailwind,
-      ],
-      backend: [
-        PROJECT_SKILLS.spline,
-        PROJECT_SKILLS.gsap,
-        PROJECT_SKILLS.shadcn,
-      ],
-    },
-    live: "#",
-    get content() {
-      return (
-        <div>
-          <div className="mb-8">
-            <SlideShow
-              images={this.screenshots.map(
-                (img) => `/assets/projects-screenshots/portfolio/${img}`
-              )}
-            />
-          </div>
-          <TypographyP className="font-mono text-2xl text-center">
-            An immersive 3D interactive portfolio featuring real-time WebGL animations.
-          </TypographyP>
-          <TypographyP className="font-mono">
-            Designed and built a state-of-the-art interactive web application using Next.js, React, and TypeScript. Integrated an interactive 3D mechanical keyboard built with Spline and Three.js where keycaps dynamically bounce and respond to user interactions and hover events. Leveraged Framer Motion and GSAP for fluid micro-animations, glassmorphism UI components, and optimal performance across all devices.
-          </TypographyP>
-          <ProjectsLinks live={this.live} repo={this.github} />
-        </div>
-      );
-    },
-  },
 ];
 export default projects;
