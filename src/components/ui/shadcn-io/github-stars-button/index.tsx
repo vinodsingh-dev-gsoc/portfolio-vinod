@@ -95,7 +95,11 @@ function GitHubStarsButton({
   }, [springVal, stars, handleDisplayParticles]);
 
   useEffect(() => {
-    if (stars > 0) motionVal.set(stars);
+    if (stars > 0) {
+      motionVal.set(stars);
+      motionNumberRef.current = stars;
+      forceRender();
+    }
   }, [motionVal, stars]);
 
   const fillPercentage = Math.min(100, (motionNumberRef.current / stars) * 100);

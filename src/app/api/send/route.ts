@@ -72,6 +72,6 @@ export async function POST(req: Request) {
 
     return Response.json(resendData);
   } catch (error) {
-    return Response.json({ error }, { status: 500 });
+    return Response.json({ error: String(error) || "An unexpected error occurred." }, { status: 500 });
   }
 }

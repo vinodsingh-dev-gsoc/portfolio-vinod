@@ -24,7 +24,13 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
   const [splineApp, setSplineApp] = useState<Application>();
   const selectedSkillRef = useRef<Skill | null>(null);
   const originalYsRef = useRef<Record<string, number>>({});
-  const { playPressSound, playReleaseSound } = useSounds();
+  const {
+    playPressSound,
+    playReleaseSound,
+    toggleBgm,
+    isBgmPlaying,
+    bgmAvailable,
+  } = useSounds();
 
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
   const [activeSection, setActiveSection] = useState<Section>(() => {
@@ -302,8 +308,8 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
           const origY = originalYsRef.current[skill.name] ?? 0;
           floatTweens.push(
             gsap.to(keycap.position, {
-              y: origY + Math.random() * 50 + 50,
-              duration: Math.random() * 2 + 2,
+              y: origY + Math.random() * 250 + 250,
+              duration: Math.random() * 3 + 3,
               delay: idx * 0.05,
               repeat: -1,
               yoyo: true,
@@ -666,6 +672,15 @@ const KeyboardScene = ({ maxDpr }: { maxDpr: number }) => {
           </>
         )}
       </div>
+      {bgmAvailable && (
+        <button
+          type="button"
+          onClick={toggleBgm}
+          className="fixed right-4 bottom-4 z-50 rounded-full border border-white/20 bg-slate-950/90 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-black/30 backdrop-blur-md transition hover:bg-slate-900"
+        >
+          {isBgmPlaying ? "Stop music" : "Play music"}
+        </button>
+      )}
     </Suspense>
   );
 };

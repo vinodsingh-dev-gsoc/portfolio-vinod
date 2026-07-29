@@ -244,7 +244,7 @@ const projects: Project[] = [
       frontend: [PROJECT_SKILLS.flutter, PROJECT_SKILLS.dart],
       backend: [PROJECT_SKILLS.firebase],
     },
-    live: "https://play.google.com/store",
+    live: "https://play.google.com/store/apps/details?id=com.vinod.padhaipedia",
     get content() {
       return (
         <div>

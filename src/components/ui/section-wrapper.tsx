@@ -23,6 +23,7 @@ const SectionWrapper = ({ id, className, children, ...props }: SectionWrapperPro
       id={id}
       ref={containerRef}
       className={cn("relative", className)}
+      style={{ position: "relative", ...props.style }}
       {...props}
     >
       <motion.div

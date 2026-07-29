@@ -51,8 +51,13 @@ const ContactForm = () => {
         body: JSON.stringify({ fullName, email, message }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || `Request failed (${res.status})`);
+        const data = await res.json().catch(() => null);
+        const text = await res.text().catch(() => null);
+        const message =
+          data?.error ||
+          (typeof text === "string" && text.trim() ? text : null) ||
+          `Request failed (${res.status})`;
+        throw new Error(message);
       }
       toast({
         title: "Thank you!",

@@ -1,13 +1,20 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export const useSounds = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const pressBufferRef = useRef<AudioBuffer | null>(null);
   const releaseBufferRef = useRef<AudioBuffer | null>(null);
+  const confettiBufferRef = useRef<AudioBuffer | null>(null);
+  const bgmRef = useRef<HTMLAudioElement | null>(null);
+  const [bgmAvailable, setBgmAvailable] = useState(false);
+  const [isBgmPlaying, setIsBgmPlaying] = useState(false);
 
   useEffect(() => {
     const loadSound = async () => {
       try {
+        const consent = window.localStorage.getItem("portfolioSoundConsent");
+        if (consent !== "yes") return;
+
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
         if (!AudioContext) return;
 
@@ -27,15 +34,46 @@ export const useSounds = () => {
         const confettiResponse = await fetch('/assets/sounds/vine-boom.mp3');
         const confettiArrayBuffer = await confettiResponse.arrayBuffer();
         confettiBufferRef.current = await ctx.decodeAudioData(confettiArrayBuffer);
+
+        if (bgmRef.current) {
+          bgmRef.current.pause();
+        }
+
+        const bgm = new Audio('/assets/music/ncs.mp3');
+        bgm.loop = true;
+        bgm.volume = 0.08;
+        bgm.preload = 'auto';
+        
+        bgm.addEventListener('play', () => setIsBgmPlaying(true));
+        bgm.addEventListener('pause', () => setIsBgmPlaying(false));
+        bgm.addEventListener('canplaythrough', () => setBgmAvailable(true), { once: true });
+        bgm.addEventListener('error', (event) => {
+          console.error('Failed to load NCS background music', event);
+        });
+        bgmRef.current = bgm;
+
+        bgm.play().catch(() => {
+          // autoplay may be blocked; user can start music manually.
+        });
       } catch (error) {
         console.error("Failed to load keycap sound", error);
       }
     };
 
+    const onSoundConsent = (event: Event) => {
+      const detail = (event as CustomEvent<string>).detail;
+      if (detail === "yes") {
+        loadSound();
+      }
+    };
+
     loadSound();
+    window.addEventListener("portfolioSoundConsent", onSoundConsent as EventListener);
 
     return () => {
       audioContextRef.current?.close();
+      window.removeEventListener("portfolioSoundConsent", onSoundConsent as EventListener);
+      bgmRef.current?.pause();
     };
   }, []);
 
@@ -104,6 +142,16 @@ export const useSounds = () => {
     playSoundBuffer(releaseBufferRef.current);
   }, [playSoundBuffer]);
 
+  const toggleBgm = useCallback(() => {
+    const bgm = bgmRef.current;
+    if (!bgm) return;
+    if (bgm.paused) {
+      bgm.play().catch(e => console.error("Failed to play background music", e));
+    } else {
+      bgm.pause();
+    }
+  }, []);
+
   // Send: Clear, slightly higher pitch, quick
   const playSendSound = useCallback(() => {
     playTone(600, 300, 0.25, 0.08);
@@ -113,8 +161,6 @@ export const useSounds = () => {
   const playReceiveSound = useCallback(() => {
     playTone(800, 400, 0.35, 0.1);
   }, [playTone]);
-
-  const confettiBufferRef = useRef<AudioBuffer | null>(null);
 
   const playConfettiSound = useCallback((intensity: number = 0.5) => {
     try {
@@ -185,8 +231,16 @@ export const useSounds = () => {
   }, []);
 
   return {
-    playSendSound, playReceiveSound, playPressSound, playReleaseSound,
+    playSendSound,
+    playReceiveSound,
+    playPressSound,
+    playReleaseSound,
     playConfettiSound,
-    startChargeTone, updateChargeTone, stopChargeTone,
+    toggleBgm,
+    isBgmPlaying,
+    bgmAvailable,
+    startChargeTone,
+    updateChargeTone,
+    stopChargeTone,
   };
 };
