@@ -1,62 +1,90 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+// GLOBAL STATE
+let globalAudioContext: AudioContext | null = null;
+let pressBuffer: AudioBuffer | null = null;
+let releaseBuffer: AudioBuffer | null = null;
+let confettiBuffer: AudioBuffer | null = null;
+let bgm: HTMLAudioElement | null = null;
+let isInitialized = false;
+
+// Simple event emitters to sync React state across multiple hook instances
+const bgmAvailableListeners = new Set<(val: boolean) => void>();
+const bgmPlayingListeners = new Set<(val: boolean) => void>();
+
+function setGlobalBgmAvailable(val: boolean) {
+  bgmAvailableListeners.forEach(fn => fn(val));
+}
+
+function setGlobalBgmPlaying(val: boolean) {
+  bgmPlayingListeners.forEach(fn => fn(val));
+}
+
 export const useSounds = () => {
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const pressBufferRef = useRef<AudioBuffer | null>(null);
-  const releaseBufferRef = useRef<AudioBuffer | null>(null);
-  const confettiBufferRef = useRef<AudioBuffer | null>(null);
-  const bgmRef = useRef<HTMLAudioElement | null>(null);
   const [bgmAvailable, setBgmAvailable] = useState(false);
   const [isBgmPlaying, setIsBgmPlaying] = useState(false);
 
   useEffect(() => {
+    bgmAvailableListeners.add(setBgmAvailable);
+    bgmPlayingListeners.add(setIsBgmPlaying);
+
+    if (bgm) {
+      setBgmAvailable(true);
+      setIsBgmPlaying(!bgm.paused);
+    }
+
     const loadSound = async () => {
+      if (isInitialized) return;
+      
       try {
         const consent = window.localStorage.getItem("portfolioSoundConsent");
         if (consent !== "yes") return;
 
+        isInitialized = true;
+
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
         if (!AudioContext) return;
 
-        const ctx = new AudioContext();
-        audioContextRef.current = ctx;
+        if (!globalAudioContext) {
+          globalAudioContext = new AudioContext();
+        }
+        const ctx = globalAudioContext;
 
-        const response = await fetch('/assets/keycap-sounds/press.mp3');
-        const arrayBuffer = await response.arrayBuffer();
-        const decodedBuffer = await ctx.decodeAudioData(arrayBuffer);
-        pressBufferRef.current = decodedBuffer;
-
-        const releaseResponse = await fetch('/assets/keycap-sounds/release.mp3');
-        const releaseArrayBuffer = await releaseResponse.arrayBuffer();
-        const releaseDecodedBuffer = await ctx.decodeAudioData(releaseArrayBuffer);
-        releaseBufferRef.current = releaseDecodedBuffer;
-
-        const confettiResponse = await fetch('/assets/sounds/vine-boom.mp3');
-        const confettiArrayBuffer = await confettiResponse.arrayBuffer();
-        confettiBufferRef.current = await ctx.decodeAudioData(confettiArrayBuffer);
-
-        if (bgmRef.current) {
-          bgmRef.current.pause();
+        if (!pressBuffer) {
+          const response = await fetch('/assets/keycap-sounds/press.mp3');
+          pressBuffer = await ctx.decodeAudioData(await response.arrayBuffer());
         }
 
-        const bgm = new Audio('/assets/music/ncs.mp3');
-        bgm.loop = true;
-        bgm.volume = 0.08;
-        bgm.preload = 'auto';
-        
-        bgm.addEventListener('play', () => setIsBgmPlaying(true));
-        bgm.addEventListener('pause', () => setIsBgmPlaying(false));
-        bgm.addEventListener('canplaythrough', () => setBgmAvailable(true), { once: true });
-        bgm.addEventListener('error', (event) => {
-          console.error('Failed to load NCS background music', event);
-        });
-        bgmRef.current = bgm;
+        if (!releaseBuffer) {
+          const releaseResponse = await fetch('/assets/keycap-sounds/release.mp3');
+          releaseBuffer = await ctx.decodeAudioData(await releaseResponse.arrayBuffer());
+        }
 
-        bgm.play().catch(() => {
-          // autoplay may be blocked; user can start music manually.
-        });
+        if (!confettiBuffer) {
+          const confettiResponse = await fetch('/assets/sounds/vine-boom.mp3');
+          confettiBuffer = await ctx.decodeAudioData(await confettiResponse.arrayBuffer());
+        }
+
+        if (!bgm) {
+          bgm = new Audio('/assets/music/ncs.mp3');
+          bgm.loop = true;
+          bgm.volume = 0.08;
+          bgm.preload = 'auto';
+          
+          bgm.addEventListener('play', () => setGlobalBgmPlaying(true));
+          bgm.addEventListener('pause', () => setGlobalBgmPlaying(false));
+          bgm.addEventListener('canplaythrough', () => setGlobalBgmAvailable(true), { once: true });
+          bgm.addEventListener('error', (event) => {
+            console.error('Failed to load NCS background music', event);
+          });
+
+          bgm.play().catch(() => {
+            // autoplay may be blocked; user can start music manually.
+          });
+        }
       } catch (error) {
-        console.error("Failed to load keycap sound", error);
+        console.error("Failed to load sounds", error);
+        isInitialized = false;
       }
     };
 
@@ -71,17 +99,18 @@ export const useSounds = () => {
     window.addEventListener("portfolioSoundConsent", onSoundConsent as EventListener);
 
     return () => {
-      audioContextRef.current?.close();
+      bgmAvailableListeners.delete(setBgmAvailable);
+      bgmPlayingListeners.delete(setIsBgmPlaying);
       window.removeEventListener("portfolioSoundConsent", onSoundConsent as EventListener);
-      bgmRef.current?.pause();
+      // We do NOT pause the global bgm or close the audio context here because other components might still be using them.
     };
   }, []);
 
   const getContext = useCallback(() => {
-    if (audioContextRef.current?.state === 'suspended') {
-      audioContextRef.current.resume().catch(() => { });
+    if (globalAudioContext?.state === 'suspended') {
+      globalAudioContext.resume().catch(() => { });
     }
-    return audioContextRef.current;
+    return globalAudioContext;
   }, []);
 
   const playTone = useCallback((startFreq: number, endFreq: number, duration: number, vol: number) => {
@@ -134,16 +163,10 @@ export const useSounds = () => {
     }
   }, [getContext]);
 
-  const playPressSound = useCallback(() => {
-    playSoundBuffer(pressBufferRef.current);
-  }, [playSoundBuffer]);
-
-  const playReleaseSound = useCallback(() => {
-    playSoundBuffer(releaseBufferRef.current);
-  }, [playSoundBuffer]);
+  const playPressSound = useCallback(() => playSoundBuffer(pressBuffer), [playSoundBuffer]);
+  const playReleaseSound = useCallback(() => playSoundBuffer(releaseBuffer), [playSoundBuffer]);
 
   const toggleBgm = useCallback(() => {
-    const bgm = bgmRef.current;
     if (!bgm) return;
     if (bgm.paused) {
       bgm.play().catch(e => console.error("Failed to play background music", e));
@@ -153,23 +176,17 @@ export const useSounds = () => {
   }, []);
 
   // Send: Clear, slightly higher pitch, quick
-  const playSendSound = useCallback(() => {
-    playTone(600, 300, 0.25, 0.08);
-  }, [playTone]);
-
+  const playSendSound = useCallback(() => playTone(600, 300, 0.25, 0.08), [playTone]);
   // Receive: Lower pitch, bubble-like, slightly longer
-  const playReceiveSound = useCallback(() => {
-    playTone(800, 400, 0.35, 0.1);
-  }, [playTone]);
+  const playReceiveSound = useCallback(() => playTone(800, 400, 0.35, 0.1), [playTone]);
 
   const playConfettiSound = useCallback((intensity: number = 0.5) => {
     try {
       const ctx = getContext();
-      const buffer = confettiBufferRef.current;
-      if (!ctx || !buffer) return;
+      if (!ctx || !confettiBuffer) return;
 
       const source = ctx.createBufferSource();
-      source.buffer = buffer;
+      source.buffer = confettiBuffer;
       // Lower intensity = higher pitch (lighter pop), higher = deeper boom
       source.playbackRate.value = 1.2 - intensity * 0.4;
       source.detune.value = (Math.random() * 100) - 50;
