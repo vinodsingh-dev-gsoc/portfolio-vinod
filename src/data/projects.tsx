@@ -317,12 +317,13 @@ const projects: Project[] = [
     id: "portfolio",
     category: "3D Web Application & Portfolio",
     title: "Interactive 3D Portfolio",
-    src: "/assets/projects-screenshots/portfolio/projects.png",
+    src: "/assets/projects-screenshots/portfolio/landing.png",
     screenshots: [
+      "landing.png",
       "projects.png",
-      "navbar.png",
-      "project.png",
       "skills.png",
+      "blogs.png",
+      "contact.png"
     ],
     skills: {
       frontend: [
